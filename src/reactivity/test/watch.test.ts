@@ -18,4 +18,23 @@ describe("watch", () => {
     user.age++;
     expect(fn).toBeCalledTimes(1);
   });
+  it("oldVal and newVal in watch", () => {
+    const user = reactive({
+      age: 10,
+    });
+    let oldVal, newVal;
+    watch(
+      () => user.age,
+      (n, o) => {
+        newVal = n;
+        oldVal = o;
+      }
+    );
+    user.age++
+    expect(oldVal).toBe(10)
+    expect(newVal).toBe(11)
+    user.age = 20
+    expect(oldVal).toBe(11)
+    expect(newVal).toBe(20)
+  });
 });
