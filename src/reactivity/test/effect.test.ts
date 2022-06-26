@@ -15,6 +15,18 @@ describe("effect", () => {
     user.age = 20;
     expect(nextAge).toBe(21);
   });
+  it("self add avoid loop", () => {
+    const user = reactive({
+      age: 10,
+      name: "russ",
+    });
+    effect(() => {
+      console.log(user.name);
+      user.age++;
+    });
+    expect(user.name).toBe("russ");
+    expect(user.age).toBe(11);
+  });
 });
 
 // it("should return runner", () => {

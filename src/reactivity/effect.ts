@@ -39,7 +39,7 @@ export function track(
   }
   let deps = depsMap.get(key);
   if (!deps) {
-    depsMap.set(key, (deps = new Set<myFunction>()));
+    depsMap.set(key, (deps = new Set<ReactiveEffect>()));
   }
   deps.add(activeEffect);
 }
@@ -50,9 +50,13 @@ export function trigger(
 ) {
   let depsMap = bucket.get(target);
   if (!depsMap) return;
-  let deps = depsMap.get(key);
-  console.log(deps);
-  deps.forEach((fn: ReactiveEffect) => fn.run());
+  let effects = depsMap.get(key);
+  console.log(effects);
+  effects.forEach((fn: ReactiveEffect) => {
+    if (fn !== activeEffect) {
+      fn.run();
+    }
+  });
 }
 export function effect(fn: myFunction, options?: Options) {
   const _effect = new ReactiveEffect(fn, options?.scheduler);
