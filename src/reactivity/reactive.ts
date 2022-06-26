@@ -15,7 +15,6 @@ export function reactive(target: object) {
   if (isReadonly(target)) {
     return target;
   }
-  console.log(target);
   return createReactiveObject(target, mutableHandlers);
 }
 

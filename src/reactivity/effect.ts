@@ -49,14 +49,16 @@ export function trigger(
   key: string | number | symbol
 ) {
   let depsMap = bucket.get(target);
+  if (!depsMap) return;
   let deps = depsMap.get(key);
-  deps.forEach((fn: myFunction) => fn());
+  console.log(deps);
+  deps.forEach((fn: ReactiveEffect) => fn.run());
 }
-export function effect(fn: myFunction, options: Options) {
-  const _effect = new ReactiveEffect(fn, options.scheduler);
+export function effect(fn: myFunction, options?: Options) {
+  const _effect = new ReactiveEffect(fn, options?.scheduler);
 
   _effect.run();
 
   const runner = _effect.run.bind(_effect);
-  return _effect;
+  return runner;
 }
