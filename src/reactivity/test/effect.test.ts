@@ -1,7 +1,7 @@
 import { reactive } from "../reactive";
 import { effect } from "../effect";
 import { describe, it, expect, vi } from "vitest";
-
+import { effect as v_effect, reactive as v_reactive } from "vue";
 describe("effect", () => {
   it("happy path", () => {
     const user = reactive({
@@ -26,6 +26,61 @@ describe("effect", () => {
     });
     expect(user.name).toBe("russ");
     expect(user.age).toBe(11);
+  });
+  it("conditional effect", () => {
+    console.warn = vi.fn();
+    const user = reactive({
+      ok: true,
+      age: 10,
+    });
+    effect(() => {
+      console.warn(user.ok ? user.age : "hhh");
+    });
+    user.ok = false;
+    user.age = 11;
+    user.age = 12;
+    expect(user.age).toBe(12);
+    expect(console.warn).toBeCalledTimes(2);
+  });
+  it("nested effect", () => {
+    const fn1 = vi.fn();
+    const fn2 = vi.fn();
+    const user = reactive({
+      foo: 1,
+      bar: 1,
+    });
+
+    effect(() => {
+      fn1();
+      effect(function f2() {
+        fn2();
+        console.log("bar", user.bar);
+      });
+      console.log("foo", user.foo);
+    });
+
+    user.foo++;
+    user.bar++;
+
+    const v_user = v_reactive({
+      foo: 1,
+      bar: 1,
+    });
+    v_effect(() => {
+      v_effect(function f2() {
+        console.log("v_bar", v_user.bar);
+      });
+      console.log("v_foo", v_user.foo);
+    });
+    v_user.foo++;
+    v_user.foo++;
+    v_user.foo++;
+    v_user.foo++;
+    v_user.foo++;
+    v_user.bar++;
+
+    expect(fn1).toBeCalledTimes(2);
+    expect(fn2).toBeCalledTimes(4);
   });
 });
 

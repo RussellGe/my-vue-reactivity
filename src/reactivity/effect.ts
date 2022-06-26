@@ -1,6 +1,6 @@
 let activeEffect: ReactiveEffect | undefined;
 let shouldTrack = false;
-const effectFnStack: Array<myFunction> = [];
+const effectFnStack: Array<ReactiveEffect> = [];
 const bucket = new WeakMap();
 type myFunction = () => unknown;
 interface Options {
@@ -9,7 +9,7 @@ interface Options {
 export class ReactiveEffect {
   private _fn: myFunction;
   public scheduler: myFunction | undefined;
-  public deps: Array<Set<myFunction>> = [];
+  public deps: Array<Set<ReactiveEffect>> = [];
   active = true;
   onStop?: () => void;
   constructor(fn: myFunction, scheduler: myFunction | undefined) {
@@ -20,14 +20,35 @@ export class ReactiveEffect {
     if (!this.active) {
       return this._fn();
     }
+    cleanup(this);
     shouldTrack = true;
     activeEffect = this;
+    effectFnStack.push(activeEffect);
     const result = this._fn();
     shouldTrack = false;
-    activeEffect = undefined;
+    effectFnStack.pop();
+    activeEffect = effectFnStack[effectFnStack.length - 1];
     return result;
   }
 }
+
+// export function isTracking() {
+//   console.log(shouldTrack)
+//   return shouldTrack && activeEffect !== undefined;
+// }
+
+// 清除依赖函数 在它所有相关的deps里清除它
+function cleanup(effect: ReactiveEffect) {
+  if (effect.deps.length) {
+    for (let i = 0; i < effect.deps.length; i++) {
+      effect.deps[i].delete(effect);
+    }
+    effect.deps.length = 0;
+  }
+
+  // console.log(effect);
+}
+
 export function track(
   target: Record<string, any>,
   key: string | number | symbol
@@ -41,7 +62,17 @@ export function track(
   if (!deps) {
     depsMap.set(key, (deps = new Set<ReactiveEffect>()));
   }
+  if (key === "bar") {
+    let a;
+    deps.forEach((item) => {
+      a = item;
+    });
+    // console.log("current", a?.deps[0], activeEffect, a === activeEffect);
+  }
   deps.add(activeEffect);
+
+  // console.log(key, "deps", deps.size);
+  activeEffect.deps.push(deps);
 }
 
 export function trigger(
@@ -51,11 +82,16 @@ export function trigger(
   let depsMap = bucket.get(target);
   if (!depsMap) return;
   let effects = depsMap.get(key);
-  console.log(effects);
+  const effectsToRun = new Set<ReactiveEffect>();
+  if (!effects) return;
   effects.forEach((fn: ReactiveEffect) => {
     if (fn !== activeEffect) {
-      fn.run();
+      effectsToRun.add(fn);
     }
+  });
+  // console.log(effectsToRun);
+  effectsToRun.forEach((effect) => {
+    effect.run();
   });
 }
 export function effect(fn: myFunction, options?: Options) {
