@@ -41,7 +41,7 @@ describe("effect", () => {
     expect(user.age).toBe(12);
     expect(console.warn).toBeCalledTimes(2);
   });
-  it("nested effect", () => {
+  it("nested effect new", () => {
     const fn1 = vi.fn();
     const fn2 = vi.fn();
     const user = reactive({
@@ -62,6 +62,32 @@ describe("effect", () => {
     user.bar++;
     expect(fn1).toBeCalledTimes(2);
     expect(fn2).toBeCalledTimes(4);
+  });
+  it("nested effect", () => {
+    const fn1 = vi.fn();
+    const fn2 = vi.fn();
+    const user = reactive({
+      foo: 1,
+      bar: 1,
+    });
+    const childEffect = effect(function f2() {
+      fn2();
+      console.log("bar", user.bar);
+    });
+    effect(() => {
+      fn1();
+      childEffect();
+      console.log("foo", user.foo);
+    });
+
+    user.foo++;
+    user.foo++;
+    user.foo++;
+    user.foo++;
+    user.foo++;
+    user.bar++;
+    expect(fn1).toBeCalledTimes(6);
+    expect(fn2).toBeCalledTimes(8);
   });
   it("scheduler", () => {
     const user = reactive({
