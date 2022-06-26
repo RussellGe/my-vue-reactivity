@@ -7,7 +7,9 @@ export function queueJobs(job: Function) {
     jobQueue.add(job);
   }
 }
-
+export function nextTick(fn?: () => void) {
+  return fn ? p.then(fn) : p;
+}
 export function flushJobs() {
   if (isFlushing) return;
   isFlushing = true;

@@ -1,6 +1,6 @@
 import { isObject } from "../utils";
 import { track, trigger } from "./effect";
-import { reactive, ReactiveFlags, readonly } from "./reactive";
+import { isProxy, reactive, ReactiveFlags, readonly, toRaw } from "./reactive";
 
 const get = createGetter();
 const set = createSetter();
@@ -10,6 +10,9 @@ const shallowReadonlyGet = createGetter(true, true);
 function createGetter(isReadonly = false, shallow = false) {
   return function get(target: object, key: string, receiver: object): unknown {
     const res = Reflect.get(target, key, receiver);
+    if (key === ReactiveFlags.RAW) {
+      return target;
+    }
     if (key === ReactiveFlags.IS_REACTIVE) {
       return !isReadonly;
     } else if (key === ReactiveFlags.IS_READONLY) {
@@ -29,10 +32,17 @@ function createGetter(isReadonly = false, shallow = false) {
   };
 }
 
-function createSetter() {
-  return function set(target: object, key: string, value: any) {
-    const res = Reflect.set(target, key, value);
-
+function createSetter(shallow = false) {
+  return function set(
+    target: object,
+    key: string,
+    value: any,
+    receiver: object
+  ) {
+    if (!shallow) {
+      value = toRaw(value);
+    }
+    const res = Reflect.set(target, key, value, receiver);
     trigger(target, key);
     return res;
   };
