@@ -1,4 +1,4 @@
-import { effect } from "vue";
+import { effect } from "./effect";
 import { traverse } from "../utils";
 
 type WatchGetter = () => unknown | object;
@@ -10,5 +10,10 @@ export function watch(value: WatchGetter, cb: () => unknown, options? = {}) {
   } else {
     getter = traverse(value);
   }
-  effect(getter, cb());
+  console.log("watch", getter);
+  effect(getter, {
+    scheduler() {
+      cb();
+    },
+  });
 }
