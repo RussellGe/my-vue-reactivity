@@ -30,11 +30,29 @@ describe("watch", () => {
         oldVal = o;
       }
     );
-    user.age++
-    expect(oldVal).toBe(10)
-    expect(newVal).toBe(11)
-    user.age = 20
-    expect(oldVal).toBe(11)
-    expect(newVal).toBe(20)
+    user.age++;
+    expect(oldVal).toBe(10);
+    expect(newVal).toBe(11);
+    user.age = 20;
+    expect(oldVal).toBe(11);
+    expect(newVal).toBe(20);
+  });
+  it("immediate watch", () => {
+    const user = reactive({
+      age: 10,
+    });
+    const fn = vi.fn();
+    watch(
+      () => user.age,
+      () => {
+        fn();
+      },
+      {
+        immediate: true,
+      }
+    );
+    expect(fn).toBeCalledTimes(1);
+    user.age++;
+    expect(fn).toBeCalledTimes(2);
   });
 });

@@ -2,8 +2,14 @@ import { effect } from "./effect";
 import { traverse } from "../utils";
 
 type WatchGetter = () => unknown | object;
-
-export function watch(value: WatchGetter, cb: Function, options? = {}) {
+interface WatchOptions {
+  immediate?: boolean;
+}
+export function watch(
+  value: WatchGetter,
+  cb: Function,
+  options: WatchOptions = {}
+) {
   let getter: () => unknown;
   if (typeof value === "function") {
     getter = value;
@@ -11,13 +17,17 @@ export function watch(value: WatchGetter, cb: Function, options? = {}) {
     getter = traverse(value);
   }
   let oldVal: any, newVal;
+  const job = () => {
+    newVal = effectFn();
+    cb(newVal, oldVal);
+    oldVal = newVal;
+  };
   const effectFn = effect(getter, {
-    scheduler() {
-      newVal = effectFn();
-      cb(newVal, oldVal);
-      oldVal = newVal;
-    },
+    scheduler: job,
     lazy: true,
   });
   oldVal = effectFn();
+  if (options?.immediate) {
+    job();
+  }
 }
