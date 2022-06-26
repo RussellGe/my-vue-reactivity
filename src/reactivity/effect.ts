@@ -5,6 +5,7 @@ const bucket = new WeakMap();
 type myFunction = () => unknown;
 interface Options {
   scheduler?: myFunction;
+  lazy?: boolean;
 }
 export class ReactiveEffect {
   private _fn: myFunction;
@@ -62,13 +63,6 @@ export function track(
   if (!deps) {
     depsMap.set(key, (deps = new Set<ReactiveEffect>()));
   }
-  if (key === "bar") {
-    let a;
-    deps.forEach((item) => {
-      a = item;
-    });
-    // console.log("current", a?.deps[0], activeEffect, a === activeEffect);
-  }
   deps.add(activeEffect);
 
   // console.log(key, "deps", deps.size);
@@ -91,13 +85,18 @@ export function trigger(
   });
   // console.log(effectsToRun);
   effectsToRun.forEach((effect) => {
-    effect.run();
+    if (!effect.scheduler) {
+      effect.run();
+    } else {
+      effect.scheduler();
+    }
   });
 }
 export function effect(fn: myFunction, options?: Options) {
   const _effect = new ReactiveEffect(fn, options?.scheduler);
-
-  _effect.run();
+  if(!options?.lazy) {
+    _effect.run();
+  }
 
   const runner = _effect.run.bind(_effect);
   return runner;

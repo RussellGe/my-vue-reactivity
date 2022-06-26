@@ -1,7 +1,6 @@
 import { reactive } from "../reactive";
 import { effect } from "../effect";
 import { describe, it, expect, vi } from "vitest";
-import { effect as v_effect, reactive as v_reactive } from "vue";
 describe("effect", () => {
   it("happy path", () => {
     const user = reactive({
@@ -61,26 +60,56 @@ describe("effect", () => {
 
     user.foo++;
     user.bar++;
-
-    const v_user = v_reactive({
-      foo: 1,
-      bar: 1,
-    });
-    v_effect(() => {
-      v_effect(function f2() {
-        console.log("v_bar", v_user.bar);
-      });
-      console.log("v_foo", v_user.foo);
-    });
-    v_user.foo++;
-    v_user.foo++;
-    v_user.foo++;
-    v_user.foo++;
-    v_user.foo++;
-    v_user.bar++;
-
     expect(fn1).toBeCalledTimes(2);
     expect(fn2).toBeCalledTimes(4);
+  });
+  it("scheduler", () => {
+    const user = reactive({
+      age: 10,
+      name: "russ",
+    });
+    const schedulerFn = vi.fn();
+    const initFn = vi.fn();
+    effect(
+      () => {
+        initFn();
+        console.log(user.age);
+      },
+      {
+        scheduler() {
+          schedulerFn();
+        },
+      }
+    );
+    user.age++;
+    user.age++;
+    user.age++;
+    expect(schedulerFn).toBeCalledTimes(3);
+    expect(initFn).toBeCalledTimes(1);
+    expect(user.age).toBe(13);
+  });
+  it("lazy", () => {
+    const user = reactive({
+      age: 10,
+      name: "russ",
+    });
+    const initFn = vi.fn();
+    const effectLazy = effect(
+      () => {
+        initFn();
+        console.log(user.age);
+      },
+      {
+        lazy: true,
+      }
+    );
+    user.age++;
+    user.age++;
+    user.age++;
+    expect(initFn).toBeCalledTimes(0);
+    effectLazy();
+    expect(initFn).toBeCalledTimes(1);
+    expect(user.age).toBe(13);
   });
 });
 
