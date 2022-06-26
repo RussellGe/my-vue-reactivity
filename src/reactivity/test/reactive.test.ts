@@ -160,4 +160,10 @@ describe("reactive", () => {
     expect(isReactive(obj.foo)).toBe(true);
     expect(isReactive(obj.bar)).toBe(false);
   });
+  it('should not observe frozen objects', () => {
+    const obj = reactive({
+      foo: Object.freeze({ a: 1 })
+    })
+    expect(isReactive(obj.foo)).toBe(false)
+  })
 });

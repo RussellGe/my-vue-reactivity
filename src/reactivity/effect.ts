@@ -22,7 +22,7 @@ export class ReactiveEffect {
       return this._fn();
     }
     cleanup(this);
-    console.log('run')
+    console.log("run");
     shouldTrack = true;
     activeEffect = this;
     effectFnStack.push(activeEffect);
@@ -31,6 +31,15 @@ export class ReactiveEffect {
     effectFnStack.pop();
     activeEffect = effectFnStack[effectFnStack.length - 1];
     return result;
+  }
+  stop() {
+    if (this.active) {
+      cleanup(this);
+      if (this.onStop) {
+        this.onStop();
+      }
+      this.active = false;
+    }
   }
 }
 
@@ -50,7 +59,13 @@ function cleanup(effect: ReactiveEffect) {
 
   // console.log(effect);
 }
-
+export interface ReactiveEffectRunner<T = any> {
+  (): T
+  effect: ReactiveEffect
+}
+export function stop(runner: ReactiveEffectRunner) {
+  runner.effect.stop();
+}
 export function track(
   target: Record<string, any>,
   key: string | number | symbol
@@ -95,7 +110,7 @@ export function trigger(
 }
 export function effect(fn: myFunction, options?: Options) {
   const _effect = new ReactiveEffect(fn, options?.scheduler);
-  if(!options?.lazy) {
+  if (!options?.lazy) {
     _effect.run();
   }
 

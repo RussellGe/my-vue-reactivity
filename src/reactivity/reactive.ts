@@ -55,7 +55,7 @@ export function createReactiveObject(
   if (!isObject(target)) {
     return;
   }
-  if (target[ReactiveFlags.RAW] || target[ReactiveFlags.SKIP]) {
+  if (target[ReactiveFlags.RAW] || target[ReactiveFlags.SKIP] || Object.isFrozen(target)) {
     return target;
   }
   const existingProxy = proxyMap.get(target);
