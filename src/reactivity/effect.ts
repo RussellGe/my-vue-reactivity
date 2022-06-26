@@ -22,6 +22,7 @@ export class ReactiveEffect {
       return this._fn();
     }
     cleanup(this);
+    console.log('run')
     shouldTrack = true;
     activeEffect = this;
     effectFnStack.push(activeEffect);
