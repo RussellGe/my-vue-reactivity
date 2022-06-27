@@ -1,143 +1,143 @@
-import { reactive } from "../reactive";
-import { effect } from "../effect";
-import { describe, it, expect, vi } from "vitest";
-describe("effect", () => {
-  it("happy path", () => {
+import { describe, expect, it, vi } from 'vitest'
+import { reactive } from '../reactive'
+import { effect } from '../effect'
+describe('effect', () => {
+  it('happy path', () => {
     const user = reactive({
       age: 10,
-    });
-    let nextAge;
+    })
+    let nextAge
     effect(() => {
-      nextAge = user.age + 1;
-    });
-    expect(nextAge).toBe(11);
-    user.age = 20;
-    expect(nextAge).toBe(21);
-  });
-  it("self add avoid loop", () => {
+      nextAge = user.age + 1
+    })
+    expect(nextAge).toBe(11)
+    user.age = 20
+    expect(nextAge).toBe(21)
+  })
+  it('self add avoid loop', () => {
     const user = reactive({
       age: 10,
-      name: "russ",
-    });
+      name: 'russ',
+    })
     effect(() => {
-      console.log(user.name);
-      user.age++;
-    });
-    expect(user.name).toBe("russ");
-    expect(user.age).toBe(11);
-  });
-  it("conditional effect", () => {
-    console.warn = vi.fn();
+      console.log(user.name)
+      user.age++
+    })
+    expect(user.name).toBe('russ')
+    expect(user.age).toBe(11)
+  })
+  it('conditional effect', () => {
+    console.warn = vi.fn()
     const user = reactive({
       ok: true,
       age: 10,
-    });
+    })
     effect(() => {
-      console.warn(user.ok ? user.age : "hhh");
-    });
-    user.ok = false;
-    user.age = 11;
-    user.age = 12;
-    expect(user.age).toBe(12);
-    expect(console.warn).toBeCalledTimes(2);
-  });
-  it("nested effect new", () => {
-    const fn1 = vi.fn();
-    const fn2 = vi.fn();
+      console.warn(user.ok ? user.age : 'hhh')
+    })
+    user.ok = false
+    user.age = 11
+    user.age = 12
+    expect(user.age).toBe(12)
+    expect(console.warn).toBeCalledTimes(2)
+  })
+  it('nested effect new', () => {
+    const fn1 = vi.fn()
+    const fn2 = vi.fn()
     const user = reactive({
       foo: 1,
       bar: 1,
-    });
+    })
 
     effect(() => {
-      fn1();
-      effect(function f2() {
-        fn2();
-        console.log("bar", user.bar);
-      });
-      console.log("foo", user.foo);
-    });
+      fn1()
+      effect(() => {
+        fn2()
+        console.log('bar', user.bar)
+      })
+      console.log('foo', user.foo)
+    })
 
-    user.foo++;
-    user.bar++;
-    expect(fn1).toBeCalledTimes(2);
-    expect(fn2).toBeCalledTimes(4);
-  });
-  it("nested effect", () => {
-    const fn1 = vi.fn();
-    const fn2 = vi.fn();
+    user.foo++
+    user.bar++
+    expect(fn1).toBeCalledTimes(2)
+    expect(fn2).toBeCalledTimes(4)
+  })
+  it('nested effect', () => {
+    const fn1 = vi.fn()
+    const fn2 = vi.fn()
     const user = reactive({
       foo: 1,
       bar: 1,
-    });
-    const childEffect = effect(function f2() {
-      fn2();
-      console.log("bar", user.bar);
-    });
+    })
+    const childEffect = effect(() => {
+      fn2()
+      console.log('bar', user.bar)
+    })
     effect(() => {
-      fn1();
-      childEffect();
-      console.log("foo", user.foo);
-    });
+      fn1()
+      childEffect()
+      console.log('foo', user.foo)
+    })
 
-    user.foo++;
-    user.foo++;
-    user.foo++;
-    user.foo++;
-    user.foo++;
-    user.bar++;
-    expect(fn1).toBeCalledTimes(6);
-    expect(fn2).toBeCalledTimes(8);
-  });
-  it("scheduler", () => {
+    user.foo++
+    user.foo++
+    user.foo++
+    user.foo++
+    user.foo++
+    user.bar++
+    expect(fn1).toBeCalledTimes(6)
+    expect(fn2).toBeCalledTimes(8)
+  })
+  it('scheduler', () => {
     const user = reactive({
       age: 10,
-      name: "russ",
-    });
-    const schedulerFn = vi.fn();
-    const initFn = vi.fn();
+      name: 'russ',
+    })
+    const schedulerFn = vi.fn()
+    const initFn = vi.fn()
     effect(
       () => {
-        initFn();
-        console.log(user.age);
+        initFn()
+        console.log(user.age)
       },
       {
         scheduler() {
-          schedulerFn();
+          schedulerFn()
         },
-      }
-    );
-    user.age++;
-    user.age++;
-    user.age++;
-    expect(schedulerFn).toBeCalledTimes(3);
-    expect(initFn).toBeCalledTimes(1);
-    expect(user.age).toBe(13);
-  });
-  it("lazy", () => {
+      },
+    )
+    user.age++
+    user.age++
+    user.age++
+    expect(schedulerFn).toBeCalledTimes(3)
+    expect(initFn).toBeCalledTimes(1)
+    expect(user.age).toBe(13)
+  })
+  it('lazy', () => {
     const user = reactive({
       age: 10,
-      name: "russ",
-    });
-    const initFn = vi.fn();
+      name: 'russ',
+    })
+    const initFn = vi.fn()
     const effectLazy = effect(
       () => {
-        initFn();
-        console.log(user.age);
+        initFn()
+        console.log(user.age)
       },
       {
         lazy: true,
-      }
-    );
-    user.age++;
-    user.age++;
-    user.age++;
-    expect(initFn).toBeCalledTimes(0);
-    effectLazy();
-    expect(initFn).toBeCalledTimes(1);
-    expect(user.age).toBe(13);
-  });
-});
+      },
+    )
+    user.age++
+    user.age++
+    user.age++
+    expect(initFn).toBeCalledTimes(0)
+    effectLazy()
+    expect(initFn).toBeCalledTimes(1)
+    expect(user.age).toBe(13)
+  })
+})
 
 // it("should return runner", () => {
 //   let foo = 10;

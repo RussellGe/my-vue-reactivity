@@ -1,60 +1,60 @@
-let activeEffect: ReactiveEffect | undefined;
-let shouldTrack = false;
-const effectFnStack: Array<ReactiveEffect> = [];
-const bucket = new WeakMap();
-type myFunction = () => unknown;
+/* eslint-disable @typescript-eslint/no-this-alias */
+let activeEffect: ReactiveEffect | undefined
+let shouldTrack = false
+const effectFnStack: Array<ReactiveEffect> = []
+const bucket = new WeakMap()
+type myFunction = () => unknown
 interface Options {
-  scheduler?: myFunction;
-  lazy?: boolean;
+  scheduler?: myFunction
+  lazy?: boolean
 }
 export class ReactiveEffect {
-  private _fn: myFunction;
-  public scheduler: myFunction | undefined;
-  public deps: Array<Set<ReactiveEffect>> = [];
-  active = true;
-  onStop?: () => void;
+  private _fn: myFunction
+  public scheduler: myFunction | undefined
+  public deps: Array<Set<ReactiveEffect>> = []
+  active = true
+  onStop?: () => void
   constructor(fn: myFunction, scheduler: myFunction | undefined) {
-    this._fn = fn;
-    this.scheduler = scheduler;
+    this._fn = fn
+    this.scheduler = scheduler
   }
+
   run() {
-    if (!this.active) {
-      return this._fn();
-    }
-    cleanup(this);
-    console.log("run");
-    shouldTrack = true;
-    activeEffect = this;
-    effectFnStack.push(activeEffect);
-    const result = this._fn();
-    shouldTrack = false;
-    effectFnStack.pop();
-    activeEffect = effectFnStack[effectFnStack.length - 1];
-    return result;
+    if (!this.active)
+      return this._fn()
+
+    cleanup(this)
+    shouldTrack = true
+    activeEffect = this
+    effectFnStack.push(activeEffect)
+    const result = this._fn()
+    shouldTrack = false
+    effectFnStack.pop()
+    activeEffect = effectFnStack[effectFnStack.length - 1]
+    return result
   }
+
   stop() {
     if (this.active) {
-      cleanup(this);
-      if (this.onStop) {
-        this.onStop();
-      }
-      this.active = false;
+      cleanup(this)
+      if (this.onStop)
+        this.onStop()
+
+      this.active = false
     }
   }
 }
 
-// export function isTracking() {
-//   console.log(shouldTrack)
-//   return shouldTrack && activeEffect !== undefined;
-// }
+export function isTracking() {
+  return shouldTrack && activeEffect !== undefined
+}
 
 // 清除依赖函数 在它所有相关的deps里清除它
 function cleanup(effect: ReactiveEffect) {
   if (effect.deps.length) {
-    for (let i = 0; i < effect.deps.length; i++) {
-      effect.deps[i].delete(effect);
-    }
-    effect.deps.length = 0;
+    for (let i = 0; i < effect.deps.length; i++) effect.deps[i].delete(effect)
+
+    effect.deps.length = 0
   }
 
   // console.log(effect);
@@ -64,56 +64,61 @@ export interface ReactiveEffectRunner<T = any> {
   effect: ReactiveEffect
 }
 export function stop(runner: ReactiveEffectRunner) {
-  runner.effect.stop();
+  runner.effect.stop()
 }
 export function track(
   target: Record<string, any>,
-  key: string | number | symbol
+  key: string | number | symbol,
 ) {
-  if (!activeEffect) return;
-  let depsMap = bucket.get(target);
-  if (!depsMap) {
-    bucket.set(target, (depsMap = new Map()));
-  }
-  let deps = depsMap.get(key);
-  if (!deps) {
-    depsMap.set(key, (deps = new Set<ReactiveEffect>()));
-  }
-  deps.add(activeEffect);
+  if (!activeEffect)
+    return
+  let depsMap = bucket.get(target)
+  if (!depsMap)
+    bucket.set(target, (depsMap = new Map()))
 
-  // console.log(key, "deps", deps.size);
-  activeEffect.deps.push(deps);
+  let deps = depsMap.get(key)
+  if (!deps)
+    depsMap.set(key, (deps = new Set<ReactiveEffect>()))
+  trackEffect(deps)
 }
-
+export function trackEffect(deps: Set<ReactiveEffect>) {
+  if (!activeEffect)
+    return
+  deps.add(activeEffect)
+  // console.log(key, "deps", deps.size);
+  activeEffect.deps.push(deps)
+}
 export function trigger(
   target: Record<string, any>,
-  key: string | number | symbol
+  key: string | number | symbol,
 ) {
-  let depsMap = bucket.get(target);
-  if (!depsMap) return;
-  let effects = depsMap.get(key);
-  const effectsToRun = new Set<ReactiveEffect>();
-  if (!effects) return;
+  const depsMap = bucket.get(target)
+  if (!depsMap)
+    return
+  const effects = depsMap.get(key)
+  const effectsToRun = new Set<ReactiveEffect>()
+  if (!effects)
+    return
   effects.forEach((fn: ReactiveEffect) => {
-    if (fn !== activeEffect) {
-      effectsToRun.add(fn);
-    }
-  });
+    if (fn !== activeEffect)
+      effectsToRun.add(fn)
+  })
   // console.log(effectsToRun);
-  effectsToRun.forEach((effect) => {
-    if (!effect.scheduler) {
-      effect.run();
-    } else {
-      effect.scheduler();
-    }
-  });
+  triggerEffect(effectsToRun)
+}
+export function triggerEffect(deps: Set<ReactiveEffect>) {
+  const runDeps = new Set(deps)
+  runDeps.forEach((effect) => {
+    if (!effect.scheduler)
+      effect.run()
+    else effect.scheduler()
+  })
 }
 export function effect(fn: myFunction, options?: Options) {
-  const _effect = new ReactiveEffect(fn, options?.scheduler);
-  if (!options?.lazy) {
-    _effect.run();
-  }
+  const _effect = new ReactiveEffect(fn, options?.scheduler)
+  if (!options?.lazy)
+    _effect.run()
 
-  const runner = _effect.run.bind(_effect);
-  return runner;
+  const runner = _effect.run.bind(_effect)
+  return runner
 }
