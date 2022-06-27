@@ -41,6 +41,18 @@ function triggerRefEffect(ref: RefImpl<any>) {
     triggerEffect(ref.deps)
 }
 
-export function ref(value: unknown) {
+export function isRef(ref: any) {
+  return !!ref?.__v_isRef
+}
+
+export function unRef(ref: any) {
+  if (isRef(ref))
+    return ref.value
+
+  else
+    return ref
+}
+
+export function ref(value: any = undefined) {
   return new RefImpl(value)
 }
