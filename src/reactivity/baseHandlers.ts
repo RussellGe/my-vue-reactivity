@@ -1,7 +1,20 @@
-import { isArray, isObject } from '../utils'
+import { isArray, isObject, isSymbol, makeMap } from '../utils'
 import { track, trigger } from './effect'
 import { ReactiveFlags, reactive, readonly, toRaw } from './reactive'
-import { isRef, unRef } from './ref'
+import { isRef, unref } from './ref'
+
+const builtInSymbols = new Set(
+  /* #__PURE__ */
+  Object.getOwnPropertyNames(Symbol)
+    // ios10.x Object.getOwnPropertyNames(Symbol) can enumerate 'arguments' and 'caller'
+    // but accessing them on Symbol leads to TypeError because Symbol is a strict mode
+    // function
+    .filter(key => key !== 'arguments' && key !== 'caller')
+    .map(key => (Symbol as any)[key])
+    .filter(isSymbol),
+)
+
+const isNonTrackableKeys = /* #__PURE__ */ makeMap('__proto__,__v_isRef,__isVue')
 
 const get = createGetter()
 const set = createSetter()
@@ -10,8 +23,6 @@ const readonlyGet = createGetter(true)
 
 function createGetter(isReadonly = false, shallow = false) {
   return function get(target: object, key: string, receiver: object): unknown {
-    const res = Reflect.get(target, key, receiver)
-
     if (key === ReactiveFlags.RAW)
       return target
 
@@ -19,12 +30,15 @@ function createGetter(isReadonly = false, shallow = false) {
       return !isReadonly
     else if (key === ReactiveFlags.IS_READONLY)
       return isReadonly
+    const res = Reflect.get(target, key, receiver)
+    if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys(key))
+      return res
     if (!isReadonly)
       track(target, key)
     if (shallow)
       return res
-    if (isRef(res))
-      return res.value
+    if (isRef(res) && !isArray(target))
+      return unref(res)
     if (isObject(res))
       return isReadonly ? readonly(res) : reactive(res)
 

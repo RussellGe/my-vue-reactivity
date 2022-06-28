@@ -3,6 +3,17 @@ import type { ReactiveEffect } from './effect'
 import { isTracking, trackEffect, triggerEffect } from './effect'
 import { reactive, toRaw } from './reactive'
 
+declare const RefSymbol: unique symbol
+export interface Ref<T = any> {
+  value: T
+  /**
+   * Type differentiator only.
+   * We need this to be in public d.ts but don't want it to show up in IDE
+   * autocomplete, so we use a private Symbol instead.
+   */
+  [RefSymbol]: true
+}
+
 class RefImpl<T> {
   private _value: T
   private _rawValue: T
@@ -16,6 +27,8 @@ class RefImpl<T> {
 
   get value() {
     trackRefEffect(this)
+    if (isRef(this._value))
+      return unref(this._value)
     return this._value
   }
 
@@ -45,14 +58,25 @@ export function isRef(ref: any) {
   return !!ref?.__v_isRef
 }
 
-export function unRef(ref: any) {
+export function unref(ref: any) {
   if (isRef(ref))
     return ref.value
-
-  else
-    return ref
+  else return ref
 }
 
-export function ref(value: any = undefined) {
-  return new RefImpl(value)
+export function ref<T extends object>(
+  value: T
+): [T] extends [Ref] ? T : Ref<T>
+export function ref<T>(value: T): Ref<T>
+export function ref<T = any>(): Ref<T | undefined>
+export function ref(value?: unknown) {
+  return createRef(value)
+}
+
+function createRef(rawValue: unknown) {
+  if (isRef(rawValue))
+    return rawValue
+
+  else
+    return new RefImpl(rawValue)
 }

@@ -1,34 +1,37 @@
-import { effect, ReactiveEffect, track, trigger } from "./effect";
-import { toRaw } from "./reactive";
+import { ReactiveEffect, track, trigger } from './effect'
+import { toRaw } from './reactive'
 
 class ComputedRefImpl {
-  private _getter;
-  private _dirty: boolean = true;
-  private _value: any;
-  public effect: ReactiveEffect;
+  private _getter
+  private _dirty = true
+  private _value: any
+  public readonly __v_isRef = true
+  public effect: ReactiveEffect
   constructor(getter: () => unknown) {
-    this._getter = getter;
+    this._getter = getter
     this.effect = new ReactiveEffect(getter, () => {
       if (!this._dirty) {
-        this._dirty = true;
-        trigger(this, "value");
+        this._dirty = true
+        trigger(this, 'value')
       }
-    });
+    })
   }
+
   get value() {
-    const self = toRaw(this);
+    const self = toRaw(this)
     if (this._dirty) {
-      this._value = this.effect.run();
-      track(self, "value");
-      this._dirty = false;
+      this._value = this.effect.run()
+      track(self, 'value')
+      this._dirty = false
     }
-    return self._value;
+    return self._value
   }
+
   set value(val) {
-    console.warn("computed data should not be set");
+    console.warn('computed data should not be set')
   }
 }
 
 export function computed(getter: () => unknown) {
-  return new ComputedRefImpl(getter);
+  return new ComputedRefImpl(getter)
 }
